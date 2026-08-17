@@ -14379,6 +14379,12 @@ function registerDeepLinkProtocol() {
   }
 }
 
+// macOS: register the protocol BEFORE taking the single-instance lock. If we
+// register inside whenReady(), Launch Services reacts to the scheme change by
+// launching a second instance — dual Dock icons flash, then the loser quits.
+// (macOS-only Launch Services race; see references/macos-electron-dual-icon.md)
+registerDeepLinkProtocol()
+
 // Single-instance lock: deep links on a running app (Win/Linux) arrive as a
 // second-instance argv. Without the lock a second `hermes://` launch spawns a
 // whole new app instead of routing into the running one.
@@ -14449,7 +14455,6 @@ app.whenReady().then(() => {
   installDownloadHandling()
   registerMediaProtocol()
   installEmbedReferer()
-  registerDeepLinkProtocol()
   ensureWslWindowsFonts()
   configureSpellChecker()
   registerPowerResumeListeners()

@@ -3336,8 +3336,16 @@ class FeishuAdapter(BasePlatformAdapter):
             if text.startswith("/"):
                 inbound_type = MessageType.COMMAND
 
-        # Guard runs post-strip so a pure "@Bot" message (stripped to "") is dropped.
-        if inbound_type == MessageType.TEXT and not text and not media_urls:
+        # Guard runs post-strip so a pure "@Bot" message (stripped to "") is
+        # dropped — UNLESS the bot itself was mentioned. A bare @bot is a
+        # meaningful wake-up (segmented instructions, context nudge); the
+        # mention hint below carries it forward. (2026-08-12 user request)
+        if (
+            inbound_type == MessageType.TEXT
+            and not text
+            and not media_urls
+            and not self._message_mentions_bot(mentions)
+        ):
             logger.debug("[Feishu] Ignoring empty text message id=%s", message_id)
             return
 
@@ -4445,13 +4453,12 @@ class FeishuAdapter(BasePlatformAdapter):
     # --- Mention detection ----------------------------------------------------
 
     def _mentions_self(self, message: Any) -> bool:
-        # @_all is Feishu's @everyone placeholder.
-        raw_content = getattr(message, "content", "") or ""
-        if "@_all" in raw_content:
-            return True
+        # @_all (Feishu @所有人) does NOT count as mentioning the bot.
+        # Only check mentions array for bot's open_id.
         mentions = getattr(message, "mentions", None) or []
         if mentions and self._message_mentions_bot(mentions):
             return True
+        raw_content = getattr(message, "content", "") or ""
         normalized = normalize_feishu_message(
             message_type=getattr(message, "message_type", "") or "",
             raw_content=raw_content,
