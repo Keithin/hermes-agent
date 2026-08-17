@@ -205,3 +205,10 @@ native/fts5_cjk/*.so
 # interrupted; consumed by launch-time recovery. Never commit it (was tracked
 # by accident via 3a69e34702, removed in the #72002 salvage).
 .lazy-refresh-incomplete
+
+# hermes-feishu-card (HFC) 插件本地产物：manifest 用于 recovery 校验，
+# .bak 是打补丁前的备份，.lock 是 recovery 互斥锁。均为本机状态，
+# 不应提交（曾误提交过，见 20e267a74a/d8d6ade19b 教训）。
+.hermes_feishu_card_manifest
+.hermes_feishu_card_recovery.lock
+*.hermes_feishu_card.bak
